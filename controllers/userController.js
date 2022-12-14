@@ -8,7 +8,7 @@ const normalCharRegex = /^[A-Za-z0-9._-]*$/;
 const editUserProfile = async (req, res) => {
 	const {
 		user: { userId },
-		body: { username, avatar, biography },
+		body: { username },
 	} = req;
 
 	const user = await User.findOne({ _id: userId }, { password: 0 });
@@ -16,6 +16,8 @@ const editUserProfile = async (req, res) => {
 	if (!user) {
 		throw new CustomError.BadRequestError("This user does not exist");
 	}
+
+	if (!username) throw new CustomError.BadRequestError("Missing username");
 
 	if (username.length < 3 || username.length > 22) {
 		throw new CustomError.BadRequestError(
@@ -30,30 +32,7 @@ const editUserProfile = async (req, res) => {
 		);
 	}
 
-	if (!avatar || !avatar.match(/^https:\/\/res.cloudinary.com\//)) {
-		throw new CustomError.BadRequestError(
-			"Please provide a valid avatar image"
-		);
-	}
-
-	if (biography.length > 200) {
-		throw new CustomError.BadRequestError(
-			"Biography must have less than 200 characters"
-		);
-	}
-
-	if (username) {
-		user.username = username;
-	}
-
-	if (avatar) {
-		user.avatar = avatar;
-	}
-
-	if (biography) {
-		user.biography = biography;
-	}
-
+	user.username = username;
 	await user.save();
 	res.status(StatusCodes.OK).json({ user });
 };
