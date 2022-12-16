@@ -5,6 +5,8 @@ const sendVerificationEmail = require("./sendVerificationEmail");
 const createTokenUser = require("./createTokenUser");
 const attachCookiesToResponse = require("./attachCookiesToResponse");
 const changeDealer = require("./changeDealer");
+const allCardsInDeck = require("./allCardsInDeck");
+const shuffle = require("./shuffle");
 const constant = require("./constant");
 
 module.exports = {
@@ -16,5 +18,7 @@ module.exports = {
 	createTokenUser,
 	attachCookiesToResponse,
 	changeDealer,
+	allCardsInDeck,
+	shuffle,
 	constant,
 };

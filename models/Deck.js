@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { MAX_NUM_CARDS_IN_DECK, ALL_CARDS_IN_DECK } = require("../utils/constant");
+const { MAX_NUM_CARDS_IN_DECK, DEFAULT_COINS } = require("../utils/constant");
 
 const handSchema = new mongoose.Schema({
 	player: {
@@ -13,6 +13,18 @@ const handSchema = new mongoose.Schema({
 		required: true,
 		default: [],
 	},
+
+	point: {
+		type: Number,
+		required: true,
+		default: 0,
+	},
+
+	coins: {
+		type: Number,
+		required: true,
+		default: DEFAULT_COINS,
+	},
 });
 
 const DeckSchema = new mongoose.Schema(
@@ -20,7 +32,7 @@ const DeckSchema = new mongoose.Schema(
 		remainingCards: {
 			type: [String],
 			required: true,
-            default: ALL_CARDS_IN_DECK
+			default: [],
 		},
 
 		drawnCards: {

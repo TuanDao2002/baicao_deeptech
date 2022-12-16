@@ -4,7 +4,7 @@ const CustomError = require("../errors");
 const Room = require("../models/Room");
 const Deck = require("../models/Deck");
 
-const { generateCards, changeDealer, constant } = require("../utils");
+const { changeDealer, shuffle, allCardsInDeck, constant } = require("../utils");
 const mongoose = require("mongoose");
 const MAX_NUM_PLAYERS = constant.MAX_NUM_PLAYERS;
 
@@ -93,8 +93,7 @@ const createRoom = async (req, res) => {
 		}
 	}
 
-	
-	const deck = await Deck.create({});
+	const deck = await Deck.create({ remainingCards: shuffle(allCardsInDeck) });
 	const newRoom = {
 		dealer: userId,
 		deck: deck._id,
