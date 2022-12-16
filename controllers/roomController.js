@@ -3,7 +3,9 @@ const CustomError = require("../errors");
 
 const Room = require("../models/Room");
 
-const { generateCards } = require("../utils");
+const { generateCards, changeDealer } = require("../utils");
+const mongoose = require("mongoose");
+const MAX_NUM_PLAYERS = 3;
 
 const getRooms = async (req, res) => {
 	let {
@@ -72,6 +74,24 @@ const createRoom = async (req, res) => {
 		user: { userId },
 	} = req;
 
+	const findRoom = await Room.findOne({
+		$or: [{ dealer: userId }, { players: userId }],
+	});
+
+	if (findRoom) {
+		if (findRoom.dealer.toString() === userId) {
+			throw new CustomError.BadRequestError(
+				"You are already a dealer in another room"
+			);
+		}
+
+		if (findRoom.players.includes(mongoose.Types.ObjectId(userId))) {
+			throw new CustomError.BadRequestError(
+				"You are already a player in another room"
+			);
+		}
+	}
+
 	const newRoom = {
 		dealer: userId,
 		cards: generateCards,
@@ -93,7 +113,7 @@ const generateShareLink = async (req, res) => {
 
 	res.status(StatusCodes.OK).json({
 		shareLink:
-			req.protocol + "://" + req.get("host") + "/api/room/join/" + roomId,
+			req.protocol + "://" + req.get("host") + "/api/room/view/" + roomId,
 	});
 };
 
@@ -103,7 +123,7 @@ const joinRoom = async (req, res) => {
 		params: { roomId },
 	} = req;
 
-	const room = await Room.findOne({ _id: roomId });
+	let room = await Room.findOne({ _id: roomId });
 	if (!room) {
 		throw new CustomError.BadRequestError("This room does not exist");
 	}
@@ -117,17 +137,46 @@ const joinRoom = async (req, res) => {
 		);
 	}
 
-	if (players.includes(userId)) {
+	if (players.includes(mongoose.Types.ObjectId(userId))) {
 		throw new CustomError.BadRequestError("You already joined this room");
+	}
+
+	const findRoom = await Room.findOne({
+		$or: [{ dealer: userId }, { players: userId }],
+	});
+
+	if (findRoom) {
+		if (findRoom.dealer.toString() === userId) {
+			throw new CustomError.BadRequestError(
+				"You are already a dealer in another room"
+			);
+		}
+
+		if (findRoom.players.includes(mongoose.Types.ObjectId(userId))) {
+			throw new CustomError.BadRequestError(
+				"You are already a player in another room"
+			);
+		}
 	}
 
 	players.push(userId);
 	room.players = players;
-	if (room.players.length === 3) {
+	if (room.players.length >= MAX_NUM_PLAYERS) {
 		room.isFull = true;
 	}
 
-	await room.save();
+	room = await room.save();
+	room = await room
+		.populate({
+			path: "players",
+			select: "-email -password",
+		})
+		.populate({
+			path: "dealer",
+			select: "-email -password",
+		})
+		.execPopulate();
+
 	res.status(StatusCodes.OK).json({ room });
 };
 
@@ -137,20 +186,50 @@ const leaveRoom = async (req, res) => {
 		params: { roomId },
 	} = req;
 
-	const room = await Room.findOne({ _id: roomId });
+	let room = await Room.findOne({ _id: roomId }).populate({
+		path: "players",
+		select: "-email -password",
+	});
+
 	if (!room) {
 		throw new CustomError.BadRequestError("This room does not exist");
 	}
 
-	const { dealer, players, isFull } = room;
-	if (!players.includes(userId)) {
+	const { dealer, players } = room;
+	let isPlayer = false;
+	for (let player of players) {
+		if (player._id.toString() === userId) {
+			isPlayer = true;
+			break;
+		}
+	}
+
+	if (!isPlayer && dealer.toString() !== userId) {
 		throw new CustomError.BadRequestError("You have not joined this room");
 	}
+
+	if (dealer.toString() === userId) {
+		room = await changeDealer(room);
+		if (!room) {
+			res.status(StatusCodes.OK).json({ msg: "This room is removed" });
+			return;
+		}
+	} else if (isPlayer) {
+		players.remove(mongoose.Types.ObjectId(userId));
+		room.players = players;
+	}
+
+	if (room.players.length < MAX_NUM_PLAYERS) {
+		room.isFull = false;
+	}
+
+	await room.save();
+	res.status(StatusCodes.OK).json({ room });
 };
 
 module.exports = {
 	getRooms,
-    viewRoom,
+	viewRoom,
 	createRoom,
 	generateShareLink,
 	joinRoom,

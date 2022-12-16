@@ -17,6 +17,6 @@ router.get("/view/:roomId", viewRoom);
 router.post("/create", authenticateUser, createRoom);
 router.post("/share/:roomId", generateShareLink);
 router.patch("/join/:roomId", authenticateUser, joinRoom);
-router.patch("/leave", authenticateUser, leaveRoom);
+router.patch("/leave/:roomId", authenticateUser, leaveRoom);
 
 module.exports = router;
