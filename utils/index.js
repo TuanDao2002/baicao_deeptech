@@ -4,17 +4,17 @@ const sendResetPasswordEmail = require("./sendResetPasswordEmail");
 const sendVerificationEmail = require("./sendVerificationEmail");
 const createTokenUser = require("./createTokenUser");
 const attachCookiesToResponse = require("./attachCookiesToResponse");
-const generateCards = require("./generateCards");
 const changeDealer = require("./changeDealer");
+const constant = require("./constant");
 
 module.exports = {
-    createJWT,
-    isTokenValid,
-    makeVerificationToken,
-    sendResetPasswordEmail,
-    sendVerificationEmail,
-    createTokenUser,
-    attachCookiesToResponse,
-    generateCards,
-    changeDealer
+	createJWT,
+	isTokenValid,
+	makeVerificationToken,
+	sendResetPasswordEmail,
+	sendVerificationEmail,
+	createTokenUser,
+	attachCookiesToResponse,
+	changeDealer,
+	constant,
 };

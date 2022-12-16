@@ -28,12 +28,6 @@ const UserSchema = new mongoose.Schema(
 			type: String,
 			required: true,
 		},
-
-		coins: {
-			type: Number,
-			required: true,
-			default: 5000,
-		},
 	},
 	{ timestamps: true }
 );

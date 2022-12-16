@@ -2,10 +2,11 @@ const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
 
 const Room = require("../models/Room");
+const Deck = require("../models/Deck");
 
-const { generateCards, changeDealer } = require("../utils");
+const { generateCards, changeDealer, constant } = require("../utils");
 const mongoose = require("mongoose");
-const MAX_NUM_PLAYERS = 3;
+const MAX_NUM_PLAYERS = constant.MAX_NUM_PLAYERS;
 
 const getRooms = async (req, res) => {
 	let {
@@ -92,9 +93,11 @@ const createRoom = async (req, res) => {
 		}
 	}
 
+	
+	const deck = await Deck.create({});
 	const newRoom = {
 		dealer: userId,
-		cards: generateCards,
+		deck: deck._id,
 	};
 
 	const room = await Room.create(newRoom);
