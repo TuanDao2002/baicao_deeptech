@@ -43,7 +43,7 @@ const DeckSchema = new mongoose.Schema(
 
 		dealerHand: {
 			type: handSchema,
-			default: null
+			default: null,
 		},
 
 		remaining: {
@@ -54,5 +54,14 @@ const DeckSchema = new mongoose.Schema(
 	},
 	{ timestamps: true }
 );
+
+DeckSchema.methods.getPublicFields = function () {
+	var returnObject = {
+		remaining: this.remaining,
+		createdAt: this.createdAt,
+		updatedAt: this.updatedAt,
+	};
+	return returnObject;
+};
 
 module.exports = mongoose.model("Deck", DeckSchema);

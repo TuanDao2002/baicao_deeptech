@@ -42,7 +42,7 @@ const getUserProfile = async (req, res) => {
 		params: { userId },
 	} = req;
 
-	const user = await User.findOne({ _id: userId }, { password: 0 });
+	const user = await User.findOne({ _id: userId }, { email: 0, password: 0 });
 
 	if (!user) {
 		throw new CustomError.BadRequestError("This user does not exist");
