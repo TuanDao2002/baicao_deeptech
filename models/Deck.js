@@ -35,7 +35,7 @@ const DeckSchema = new mongoose.Schema(
 			default: [],
 		},
 
-		drawnCards: {
+		hands: {
 			type: [handSchema],
 			required: true,
 			default: [],

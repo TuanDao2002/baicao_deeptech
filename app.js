@@ -18,15 +18,16 @@ const connectDB = require("./db/connect");
 const authRouter = require("./routes/authRoutes");
 const userRouter = require("./routes/userRoutes");
 const roomRouter = require("./routes/roomRoutes");
+const deckRouter = require("./routes/deckRoutes");
 
 // use middlewares
 app.set("trust proxy", 1);
 app.use(helmet());
 app.use(
-    cors({
-        credentials: true,
-        origin: ["http://localhost:3000"], // only allow website in this domain too access the resource of this server
-    })
+	cors({
+		credentials: true,
+		origin: ["http://localhost:3000"], // only allow website in this domain too access the resource of this server
+	})
 );
 app.use(xss());
 app.use(useragent.express());
@@ -38,6 +39,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/room", roomRouter);
+app.use("/api/deck", deckRouter);
 
 // error handler
 const notFoundMiddleware = require("./middleware/not-found");
@@ -48,14 +50,14 @@ app.use(errorHandlerMiddleware);
 const port = process.env.PORT || 8080;
 
 const start = async () => {
-    try {
-        await connectDB(process.env.MONGO_URI);
-        app.listen(port, () =>
-            console.log(`Server is listening on port ${port}...`)
-        );
-    } catch (error) {
-        console.log(error);
-    }
+	try {
+		await connectDB(process.env.MONGO_URI);
+		app.listen(port, () =>
+			console.log(`Server is listening on port ${port}...`)
+		);
+	} catch (error) {
+		console.log(error);
+	}
 };
 
 start();
