@@ -1,10 +1,5 @@
 const changeDealer = async (room) => {
-	const { dealer, players } = room;
-
-    if (players.length <= 0) {
-        await room.remove();
-        return null;
-    }
+	const { players } = room;
 
     room.dealer = null;
     let newDealer = players[0];

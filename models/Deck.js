@@ -35,10 +35,15 @@ const DeckSchema = new mongoose.Schema(
 			default: [],
 		},
 
-		hands: {
+		playerHands: {
 			type: [handSchema],
 			required: true,
 			default: [],
+		},
+
+		dealerHand: {
+			type: handSchema,
+			default: null
 		},
 
 		remaining: {

@@ -211,14 +211,25 @@ const leaveRoom = async (req, res) => {
 	}
 
 	if (dealer.toString() === userId) {
-		room = await changeDealer(room);
-		if (!room) {
+		if (players.length <= 0) {
+			await room.remove();
 			res.status(StatusCodes.OK).json({ msg: "This room is removed" });
 			return;
 		}
+
+		room = await changeDealer(room);
 	} else if (isPlayer) {
 		players.remove(mongoose.Types.ObjectId(userId));
 		room.players = players;
+
+		const deck = await Deck.findOne({ _id: room.deck });
+		for (let hand of deck.playerHands) {
+			if (hand.player.equals(userId)) {
+				deck.playerHands.remove(hand);
+			}
+		}
+
+		await deck.save();
 	}
 
 	if (room.players.length < MAX_NUM_PLAYERS) {
