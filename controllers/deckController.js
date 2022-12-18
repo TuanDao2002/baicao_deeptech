@@ -4,14 +4,13 @@ const CustomError = require("../errors");
 const Room = require("../models/Room");
 const Deck = require("../models/Deck");
 
-const specialRanks = require("../enum/specialRanks");
-const { changeDealer, shuffle, allCardsInDeck, constant } = require("../utils");
 const mongoose = require("mongoose");
-const { handle } = require("express/lib/router");
+
+const specialRanks = require("../enum/specialRanks");
+const { shuffle, changeDealer, allCardsInDeck, constant } = require("../utils");
 const {
 	MAX_NUM_CARDS_IN_DECK,
 	MAX_NUM_CARDS_IN_HAND,
-	MAX_NUM_PLAYERS,
 	DEFAULT_COINS,
 	DEDUCT_COINS,
 } = constant;
@@ -47,18 +46,6 @@ const shuffleDeck = async (req, res) => {
 	}
 
 	deck = await deck.save();
-	// deck = await deck
-	// 	.select("-remainingCards")
-	// 	.populate({
-	// 		path: "dealerHand.player",
-	// 		select: "-email -password",
-	// 	})
-	// 	.populate({
-	// 		path: "playerHands.player",
-	// 		select: "-email -password",
-	// 	})
-	// 	.execPopulate();
-
 	let result = deck.getPublicFields();
 	res.status(StatusCodes.OK).json({ result });
 };
@@ -139,17 +126,6 @@ const drawn = async (req, res) => {
 	deck = dealCards(deck, userId, true);
 
 	deck = await deck.save();
-	// deck = await deck
-	// 	.populate({
-	// 		path: "dealerHand.player",
-	// 		select: "-email -password",
-	// 	})
-	// 	.populate({
-	// 		path: "playerHands.player",
-	// 		select: "-email -password",
-	// 	})
-	// 	.execPopulate();
-
 	let result = deck.getPublicFields();
 	res.status(StatusCodes.OK).json({ result });
 };
@@ -160,7 +136,7 @@ const reveal = async (req, res) => {
 		params: { deckId },
 	} = req;
 
-	const room = await Room.findOne({ dealer: userId, deck: deckId });
+	let room = await Room.findOne({ dealer: userId, deck: deckId });
 	if (!room) {
 		throw new CustomError.BadRequestError(
 			"You are not the dealer of this room"
@@ -172,17 +148,40 @@ const reveal = async (req, res) => {
 		throw new CustomError.BadRequestError("This deck does not exist");
 	}
 
-    for (let hand of deck.playerHands) {
-        if (hand.point > deck.dealerHand.point) {
-            hand.coins += DEDUCT_COINS;
-            deck.dealerHand.coins -= DEDUCT_COINS;
-        } else if (hand.point < deck.dealerHand.point) {
-            hand.coins -= DEDUCT_COINS;
-            deck.dealerHand.coins += DEDUCT_COINS;
-        }
-    }
+	const lackCoinsPlayerHands = [];
 
-    deck = await deck.save();
+	for (let hand of deck.playerHands) {
+		if (hand.point > deck.dealerHand.point) {
+			hand.coins += DEDUCT_COINS;
+			deck.dealerHand.coins -= DEDUCT_COINS * 5;
+
+			if (deck.dealerHand.coins < DEDUCT_COINS) {
+				lackCoinsPlayerHands.push(deck.dealerHand);
+				room = await changeDealer(room);
+				await room.save();
+
+				for (let hand of deck.playerHands) {
+					if (hand.player.equals(room.dealer._id)) {
+						deck.dealerHand = hand;
+						deck.playerHands.remove(hand);
+						break;
+					}
+				}
+			}
+		} else if (hand.point < deck.dealerHand.point) {
+			hand.coins -= DEDUCT_COINS * 10;
+			deck.dealerHand.coins += DEDUCT_COINS;
+
+			if (hand.coins < DEDUCT_COINS) {
+				lackCoinsPlayerHands.push(hand);
+				deck.playerHands.remove(hand);
+				room.players.remove(mongoose.Types.ObjectId(hand.player));
+				await room.save();
+			}
+		}
+	}
+
+	deck = await deck.save();
 	deck = await deck
 		.populate({
 			path: "dealerHand.player",
@@ -194,10 +193,60 @@ const reveal = async (req, res) => {
 		})
 		.execPopulate();
 
-	res.status(StatusCodes.OK).json({ deck });
+	res.status(StatusCodes.OK).json({ deck, lackCoinsPlayerHands });
 };
 
-const reset = async (req, res) => {};
+const reset = async (req, res) => {
+	let {
+		user: { userId },
+		params: { deckId },
+	} = req;
+
+	const findRoom = await Room.findOne({ dealer: userId, deck: deckId });
+	if (!findRoom) {
+		throw new CustomError.BadRequestError(
+			"You are not the dealer of this room"
+		);
+	}
+
+	let deck = await Deck.findOne({ _id: deckId });
+	if (!deck) {
+		throw new CustomError.BadRequestError("This deck does not exist");
+	}
+
+	deck.remainingCards = shuffle(allCardsInDeck);
+	deck.remaining = MAX_NUM_CARDS_IN_DECK;
+	for (let hand of deck.playerHands) {
+		hand.cards = [];
+		hand.point = 0;
+		hand.coins = DEFAULT_COINS;
+	}
+
+	if (deck.dealerHand) {
+		deck.dealerHand.cards = [];
+		deck.dealerHand.point = 0;
+		deck.dealerHand.coins = DEFAULT_COINS;
+	}
+
+	deck = await deck.save();
+	deck = await deck
+		.populate({
+			path: "dealerHand.player",
+			select: "-email -password",
+		})
+		.populate({
+			path: "playerHands.player",
+			select: "-email -password",
+		})
+		.execPopulate();
+
+	const result = {
+		playerHands: deck.playerHands,
+		dealerHand: deck.dealerHand,
+		remaining: deck.remaining,
+	};
+	res.status(StatusCodes.OK).json({ deck: result });
+};
 
 module.exports = {
 	shuffleDeck,
