@@ -214,7 +214,7 @@ const forgotPassword = async (req, res) => {
         throw new CustomError.NotFoundError("This email does not exist");
     }
 
-    const { username, password, avatar } = user;
+    const { username, password } = user;
 
     const minutesToExpire = 10;
     const verificationToken = makeVerificationToken(

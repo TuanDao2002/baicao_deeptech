@@ -8,6 +8,7 @@ const changeDealer = require("./changeDealer");
 const allCardsInDeck = require("./allCardsInDeck");
 const shuffle = require("./shuffle");
 const constant = require("./constant");
+const connectedUsers = require("./connectedUsers");
 
 module.exports = {
 	createJWT,
@@ -21,4 +22,5 @@ module.exports = {
 	allCardsInDeck,
 	shuffle,
 	constant,
+	connectedUsers
 };

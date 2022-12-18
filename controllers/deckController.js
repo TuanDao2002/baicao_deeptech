@@ -14,6 +14,7 @@ const {
 	DEFAULT_COINS,
 	DEDUCT_COINS,
 } = constant;
+const { notifySocket } = require("../socket/socket");
 
 const shuffleDeck = async (req, res) => {
 	let {
@@ -47,6 +48,11 @@ const shuffleDeck = async (req, res) => {
 
 	deck = await deck.save();
 	let result = deck.getPublicFields();
+
+	for (let hand of deck.playerHands) {
+		notifySocket(req.app.io, hand.player, result);
+	}
+
 	res.status(StatusCodes.OK).json({ result });
 };
 
@@ -127,6 +133,11 @@ const drawn = async (req, res) => {
 
 	deck = await deck.save();
 	let result = deck.getPublicFields();
+
+	for (let hand of deck.playerHands) {
+		notifySocket(req.app.io, hand.player, result);
+	}
+
 	res.status(StatusCodes.OK).json({ result });
 };
 
@@ -159,7 +170,6 @@ const reveal = async (req, res) => {
 				lackCoinsPlayerHands.push(deck.dealerHand);
 				room = await changeDealer(room);
 				await room.save();
-
 				for (let hand of deck.playerHands) {
 					if (hand.player.equals(room.dealer._id)) {
 						deck.dealerHand = hand;
@@ -192,6 +202,14 @@ const reveal = async (req, res) => {
 			select: "-email -password",
 		})
 		.execPopulate();
+
+	for (let hand of deck.playerHands) {
+		notifySocket(req.app.io, hand.player, result);
+	}
+
+	for (let hand of lackCoinsPlayerHands) {
+		notifySocket(req.app.io, hand.player, result);
+	}
 
 	res.status(StatusCodes.OK).json({ deck, lackCoinsPlayerHands });
 };
@@ -245,6 +263,11 @@ const reset = async (req, res) => {
 		dealerHand: deck.dealerHand,
 		remaining: deck.remaining,
 	};
+
+	for (let hand of deck.playerHands) {
+		notifySocket(req.app.io, hand.player, result);
+	}
+
 	res.status(StatusCodes.OK).json({ deck: result });
 };
 
