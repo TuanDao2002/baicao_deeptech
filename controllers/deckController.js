@@ -164,7 +164,7 @@ const reveal = async (req, res) => {
 	for (let hand of deck.playerHands) {
 		if (hand.point > deck.dealerHand.point) {
 			hand.coins += DEDUCT_COINS;
-			deck.dealerHand.coins -= DEDUCT_COINS * 5;
+			deck.dealerHand.coins -= DEDUCT_COINS;
 
 			if (deck.dealerHand.coins < DEDUCT_COINS) {
 				lackCoinsPlayerHands.push(deck.dealerHand);
@@ -179,7 +179,7 @@ const reveal = async (req, res) => {
 				}
 			}
 		} else if (hand.point < deck.dealerHand.point) {
-			hand.coins -= DEDUCT_COINS * 10;
+			hand.coins -= DEDUCT_COINS;
 			deck.dealerHand.coins += DEDUCT_COINS;
 
 			if (hand.coins < DEDUCT_COINS) {
